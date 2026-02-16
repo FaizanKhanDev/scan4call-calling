@@ -18,6 +18,10 @@ export default function Scan4CallContact() {
     // New: prompt for phone number before sending OTP, if necessary
     const [promptPhoneMsg, setPromptPhoneMsg] = useState('');
 
+    // Prompt for permissions errors
+    const [permissionError, setPermissionError] = useState('');
+    const [permissionStep, setPermissionStep] = useState<'idle' | 'requesting' | 'done'>('idle');
+
     // Control logic for what the user is trying to do: "owner" or "emergency"
     const [contactType, setContactType] = useState<'owner' | 'emergency' | null>(null);
 
@@ -37,9 +41,82 @@ export default function Scan4CallContact() {
         const value = e.target.value.replace(/\D/g, '').slice(0, 10);
         setPhoneNumber(value);
         if (promptPhoneMsg) setPromptPhoneMsg(''); // clear error on change
+        if (permissionError) setPermissionError('');
     }
 
-    // Handler for sending OTP (COMMON)
+    // --- Microphone and Location permissions handler ---
+
+    async function requestMicrophonePermission() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            return {
+                granted: false,
+                message: "Microphone permissions are not supported on this device."
+            };
+        }
+        try {
+            await navigator.mediaDevices.getUserMedia({ audio: true }); // The browser will prompt
+            return { granted: true };
+        } catch (err) {
+            return {
+                granted: false,
+                message: "Microphone access denied. Please enable microphone access to proceed."
+            };
+        }
+    }
+
+    async function requestLocationPermission() {
+        if (!navigator.geolocation) {
+            return {
+                granted: false,
+                message: "Location permissions are not supported on this device."
+            };
+        }
+        return new Promise<{ granted: boolean; message?: string }>((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    resolve({ granted: true });
+                },
+                (error) => {
+                    let msg = "Location access denied. Please enable location access to proceed.";
+                    if (error.code === 1) {
+                        // PERMISSION_DENIED
+                        msg = "Location access denied. Please enable location access to proceed.";
+                    } else if (error.code === 2) {
+                        msg = "Location unavailable.";
+                    } else if (error.code === 3) {
+                        msg = "Location request timed out.";
+                    }
+                    resolve({ granted: false, message: msg });
+                }
+            );
+        });
+    }
+
+    // Wrapper for permissions
+    const askPermissionsAndSendOtp = async (type: 'owner' | 'emergency') => {
+        setPermissionStep('requesting');
+        setPermissionError('');
+
+        // First, microphone
+        const micResult = await requestMicrophonePermission();
+        if (!micResult.granted) {
+            setPermissionStep('idle');
+            setPermissionError(micResult.message || "Microphone permission is required.");
+            return;
+        }
+        // Then, location
+        const locResult = await requestLocationPermission();
+        if (!locResult.granted) {
+            setPermissionStep('idle');
+            setPermissionError(locResult.message || "Location permission is required.");
+            return;
+        }
+        // Both ok
+        setPermissionStep('done');
+        handleSendOtp(type);
+    };
+
+    // Handler for sending OTP (modifies to only send after permissions)
     const handleSendOtp = (type: 'owner' | 'emergency') => {
         if (!phoneNumber || phoneNumber.length < 10) {
             setPromptPhoneMsg('Kindly provide your 10-digit phone number to continue.');
@@ -92,6 +169,8 @@ export default function Scan4CallContact() {
         setContactType(null);
         setResendTimer(0);
         setPromptPhoneMsg('');
+        setPermissionError('');
+        setPermissionStep('idle');
     };
 
     // Effect for countdown timer (30s for resend)
@@ -178,6 +257,10 @@ export default function Scan4CallContact() {
                         {promptPhoneMsg && (
                             <div className="text-red-500 text-xs mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>{promptPhoneMsg}</div>
                         )}
+                        {/* Microphone/Location error message */}
+                        {permissionError && (
+                            <div className="text-red-500 text-xs mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>{permissionError}</div>
+                        )}
                         {otpError && (
                             <div className="text-red-500 text-xs mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>{otpError}</div>
                         )}
@@ -188,12 +271,15 @@ export default function Scan4CallContact() {
                                 fontFamily: 'var(--font-montserrat)'
                             }}>Completely free of Cost.</span>
                         </p>
+                        <p className="text-xs text-gray-700 mt-2" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                            Before calling, we will request <b>Microphone</b> and <b>Location</b> permissions for your security and improved service.
+                        </p>
                     </div>
 
                     {/* Call Button */}
                     <button
-                        onClick={() => handleSendOtp('owner')}
-                        disabled={isLoading}
+                        onClick={() => askPermissionsAndSendOtp('owner')}
+                        disabled={isLoading || permissionStep === 'requesting'}
                         style={{
                             background: VIBRANT_GREEN,
                             fontFamily: 'var(--font-montserrat)'
@@ -201,7 +287,7 @@ export default function Scan4CallContact() {
                         className="w-full text-white disabled:cursor-not-allowed text-black font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 mb-4 transition-colors"
                     >
                         <Phone className="w-5 h-5" />
-                        {"Call Vehicle Owner"}
+                        {permissionStep === 'requesting' ? "Requesting permissions..." : "Call Vehicle Owner"}
                     </button>
 
                     {/* Privacy Message */}
@@ -219,15 +305,15 @@ export default function Scan4CallContact() {
 
                     {/* Emergency Button */}
                     <button
-                        onClick={() => handleSendOtp('emergency')}
-                        disabled={isLoading}
+                        onClick={() => askPermissionsAndSendOtp('emergency')}
+                        disabled={isLoading || permissionStep === 'requesting'}
                         style={{
                             fontFamily: 'var(--font-montserrat)'
                         }}
                         className="bg-red-500 hover:bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-bold py-3 px-12 rounded-full flex items-center justify-center gap-2 mb-2 transition-colors"
                     >
                         <AlertCircle className="w-5 h-5" />
-                        Emergency
+                        {permissionStep === 'requesting' ? "Requesting permissions..." : "Emergency"}
                     </button>
                     <p className="text-sm text-gray-600 text-center" style={{ fontFamily: 'var(--font-montserrat)' }}>
                         For accidents or emergencies only
