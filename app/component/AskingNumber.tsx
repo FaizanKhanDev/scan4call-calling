@@ -20,6 +20,7 @@ export default function Scan4CallContact() {
 
     // Prompt for permissions errors
     const [permissionError, setPermissionError] = useState('');
+    // Remove the use of 'requesting' in UI logic - we still keep this to prevent stacked permission requests, but we no longer show "requesting" to the user
     const [permissionStep, setPermissionStep] = useState<'idle' | 'requesting' | 'done'>('idle');
 
     // Control logic for what the user is trying to do: "owner" or "emergency"
@@ -189,6 +190,9 @@ export default function Scan4CallContact() {
         setResendTimer(30); // Reset timer to 30s
     };
 
+    // Helper to check phone number validity (should be required for enabling the buttons)
+    const isPhoneNumberValid = phoneNumber.length === 10;
+
     return (
         <div
             className="min-h-screen bg-white flex flex-col items-center justify-start px-6 py-1 sm:hidden"
@@ -279,7 +283,8 @@ export default function Scan4CallContact() {
                     {/* Call Button */}
                     <button
                         onClick={() => askPermissionsAndSendOtp('owner')}
-                        disabled={isLoading || permissionStep === 'requesting'}
+                        // Only enable button if phone number is valid
+                        disabled={!isPhoneNumberValid}
                         style={{
                             background: VIBRANT_GREEN,
                             fontFamily: 'var(--font-montserrat)'
@@ -287,7 +292,7 @@ export default function Scan4CallContact() {
                         className="w-full text-white disabled:cursor-not-allowed text-black font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 mb-4 transition-colors"
                     >
                         <Phone className="w-5 h-5" />
-                        {permissionStep === 'requesting' ? "Requesting permissions..." : "Call Vehicle Owner"}
+                        Call Vehicle Owner
                     </button>
 
                     {/* Privacy Message */}
@@ -306,14 +311,15 @@ export default function Scan4CallContact() {
                     {/* Emergency Button */}
                     <button
                         onClick={() => askPermissionsAndSendOtp('emergency')}
-                        disabled={isLoading || permissionStep === 'requesting'}
+                        // Only enable button if phone number is valid
+                        disabled={!isPhoneNumberValid}
                         style={{
                             fontFamily: 'var(--font-montserrat)'
                         }}
                         className="bg-red-500 hover:bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-bold py-3 px-12 rounded-full flex items-center justify-center gap-2 mb-2 transition-colors"
                     >
                         <AlertCircle className="w-5 h-5" />
-                        {permissionStep === 'requesting' ? "Requesting permissions..." : "Emergency"}
+                        Emergency
                     </button>
                     <p className="text-sm text-gray-600 text-center" style={{ fontFamily: 'var(--font-montserrat)' }}>
                         For accidents or emergencies only
