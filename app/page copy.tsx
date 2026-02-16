@@ -24,7 +24,7 @@ const endButtonStyle: React.CSSProperties = {
 const CallComponent = () => {
   const [device, setDevice] = useState<Device | null>(null);
   const [isCalling, setIsCalling] = useState(false);
-  const [toNumber, setToNumber] = useState('+923162177746'); 
+  const [toNumber, setToNumber] = useState('+923162177746');
   // 1. Get token from your backend
   const getToken = async () => {
     try {
@@ -93,7 +93,6 @@ const CallComponent = () => {
 
   return (
     <div>
-      <h1>Web to Phone Call</h1>
       {!isCalling ? (
         <button onClick={makeCall} style={buttonStyle}>Call Phone</button>
       ) : (
