@@ -20,7 +20,6 @@ export default function Scan4CallContact() {
 
     // Prompt for permissions errors
     const [permissionError, setPermissionError] = useState('');
-    // Remove the use of 'requesting' in UI logic - we still keep this to prevent stacked permission requests, but we no longer show "requesting" to the user
     const [permissionStep, setPermissionStep] = useState<'idle' | 'requesting' | 'done'>('idle');
 
     // Control logic for what the user is trying to do: "owner" or "emergency"
@@ -99,19 +98,19 @@ export default function Scan4CallContact() {
         setPermissionError('');
 
         // First, microphone
-        const micResult = await requestMicrophonePermission();
-        if (!micResult.granted) {
-            setPermissionStep('idle');
-            setPermissionError(micResult.message || "Microphone permission is required.");
-            return;
-        }
+        // const micResult = await requestMicrophonePermission();
+        // if (!micResult.granted) {
+        //     setPermissionStep('idle');
+        //     setPermissionError(micResult.message || "Microphone permission is required.");
+        //     return;
+        // }
         // Then, location
-        const locResult = await requestLocationPermission();
-        if (!locResult.granted) {
-            setPermissionStep('idle');
-            setPermissionError(locResult.message || "Location permission is required.");
-            return;
-        }
+        // const locResult = await requestLocationPermission();
+        // if (!locResult.granted) {
+        //     setPermissionStep('idle');
+        //     setPermissionError(locResult.message || "Location permission is required.");
+        //     return;
+        // }
         // Both ok
         setPermissionStep('done');
         handleSendOtp(type);
@@ -189,9 +188,6 @@ export default function Scan4CallContact() {
         setOtpError('');
         setResendTimer(30); // Reset timer to 30s
     };
-
-    // Helper to check phone number validity (should be required for enabling the buttons)
-    const isPhoneNumberValid = phoneNumber.length === 10;
 
     return (
         <div
@@ -283,8 +279,7 @@ export default function Scan4CallContact() {
                     {/* Call Button */}
                     <button
                         onClick={() => askPermissionsAndSendOtp('owner')}
-                        // Only enable button if phone number is valid
-                        disabled={!isPhoneNumberValid}
+                        disabled={isLoading || permissionStep === 'requesting'}
                         style={{
                             background: VIBRANT_GREEN,
                             fontFamily: 'var(--font-montserrat)'
@@ -292,7 +287,7 @@ export default function Scan4CallContact() {
                         className="w-full text-white disabled:cursor-not-allowed text-black font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 mb-4 transition-colors"
                     >
                         <Phone className="w-5 h-5" />
-                        Call Vehicle Owner
+                        {"Call Vehicle Owner"}
                     </button>
 
                     {/* Privacy Message */}
@@ -311,15 +306,14 @@ export default function Scan4CallContact() {
                     {/* Emergency Button */}
                     <button
                         onClick={() => askPermissionsAndSendOtp('emergency')}
-                        // Only enable button if phone number is valid
-                        disabled={!isPhoneNumberValid}
+                        disabled={isLoading || permissionStep === 'requesting'}
                         style={{
                             fontFamily: 'var(--font-montserrat)'
                         }}
                         className="bg-red-500 hover:bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-bold py-3 px-12 rounded-full flex items-center justify-center gap-2 mb-2 transition-colors"
                     >
                         <AlertCircle className="w-5 h-5" />
-                        Emergency
+                        {"Emergency"}
                     </button>
                     <p className="text-sm text-gray-600 text-center" style={{ fontFamily: 'var(--font-montserrat)' }}>
                         For accidents or emergencies only
