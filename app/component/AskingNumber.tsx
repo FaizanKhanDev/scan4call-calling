@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Phone, CheckCircle, AlertCircle } from 'lucide-react'
 import { ROYAL_BLUE, TEAL_CYAN, VIBRANT_GREEN } from '@/constant/color';
 
+// Use montserrat for all non-Urdu text by inline style
+
 export default function Scan4CallContact() {
     // Phone number OTP states (COMMON)
     const [phoneNumber, setPhoneNumber] = useState('');
@@ -12,6 +14,9 @@ export default function Scan4CallContact() {
     const [otpVerified, setOtpVerified] = useState(false);
     const [otpError, setOtpError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    // New: prompt for phone number before sending OTP, if necessary
+    const [promptPhoneMsg, setPromptPhoneMsg] = useState('');
 
     // Control logic for what the user is trying to do: "owner" or "emergency"
     const [contactType, setContactType] = useState<'owner' | 'emergency' | null>(null);
@@ -31,19 +36,22 @@ export default function Scan4CallContact() {
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.replace(/\D/g, '').slice(0, 10);
         setPhoneNumber(value);
+        if (promptPhoneMsg) setPromptPhoneMsg(''); // clear error on change
     }
 
     // Handler for sending OTP (COMMON)
     const handleSendOtp = (type: 'owner' | 'emergency') => {
-        if (phoneNumber && phoneNumber.length === 10) {
-            setContactType(type);
-            setOtpSent(true);
+        if (!phoneNumber || phoneNumber.length < 10) {
+            setPromptPhoneMsg('Kindly provide your 10-digit phone number to continue.');
             setOtpError('');
-            setOtp(['', '', '', '']);
-            setResendTimer(30); // Start timer on OTP send
-        } else {
-            setOtpError('Please enter a valid 10-digit phone number');
+            return;
         }
+        setPromptPhoneMsg('');
+        setContactType(type);
+        setOtpSent(true);
+        setOtpError('');
+        setOtp(['', '', '', '']);
+        setResendTimer(30); // Start timer on OTP send
     };
 
     // Handler for verifying OTP (COMMON)
@@ -52,7 +60,7 @@ export default function Scan4CallContact() {
             setOtpVerified(true);
             setOtpError('');
         } else {
-            setOtpError('Please enter the 4-digit OTP sent to your phone');
+            setOtpError('Enter the 4-digit code sent to your number');
         }
     };
 
@@ -83,6 +91,7 @@ export default function Scan4CallContact() {
         setOtpError('');
         setContactType(null);
         setResendTimer(0);
+        setPromptPhoneMsg('');
     };
 
     // Effect for countdown timer (30s for resend)
@@ -102,7 +111,10 @@ export default function Scan4CallContact() {
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col items-center justify-start px-6 py-1 sm:hidden">
+        <div
+            className="min-h-screen bg-white flex flex-col items-center justify-start px-6 py-1 sm:hidden"
+            style={{ fontFamily: 'var(--font-montserrat)' }}
+        >
             {/* Logo */}
             <div className="mb-2 flex flex-col items-center justify-center">
                 <img
@@ -120,12 +132,17 @@ export default function Scan4CallContact() {
             </div>
 
             {/* Heading */}
-            <h1 className="text-lg mb-2 font-semibold text-gray-700 text-center">
-                Contact vehicle owner
+            <h1
+                className="text-lg mb-2 font-semibold text-gray-700 text-center"
+                style={{ fontFamily: 'var(--font-montserrat)' }}
+            >
+                Contact Vehicle Owner
             </h1>
 
-            {/* Urdu Text */}
-            <p className="text-lg text-red-400 mb-8 text-center font-urdu" dir="rtl">
+            {/* Urdu Text (no Montserrat) */}
+            <p className="text-lg text-red-400 mb-8 text-center font-urdu" dir="rtl" style={{
+                fontFamily: 'Noto Nastaliq Urdu',
+            }}>
                 گاڑی کے مالک سے رابطہ کرنے کے لئے اپنا فون نمبر درج کریں
             </p>
 
@@ -133,15 +150,17 @@ export default function Scan4CallContact() {
             {!otpSent && (
                 <>
                     <div className="w-full mb-8">
-                        <label className="block text-sm font-semibold text-gray-900 mb-3">
+                        <label
+                            className="block text-sm font-semibold text-gray-900 mb-3"
+                            style={{ fontFamily: 'var(--font-montserrat)' }}>
                             Your Phone Number
                         </label>
                         <div className="flex gap-3 mb-3">
                             <div
                                 className="flex flex-1 items-center bg-gray-50 border rounded-lg px-3 py-3"
-                                style={{ borderColor: TEAL_CYAN, borderWidth: 2 }}
+                                style={{ borderColor: TEAL_CYAN, borderWidth: 2, fontFamily: 'var(--font-montserrat)' }}
                             >
-                                <span className="text-gray-700 font-semibold whitespace-nowrap mr-2">🇵🇰 +92</span>
+                                <span className="text-gray-700 font-semibold whitespace-nowrap mr-2" style={{ fontFamily: 'var(--font-montserrat)' }}>🇵🇰 +92</span>
                                 <input
                                     type="tel"
                                     placeholder="339 0144636"
@@ -151,29 +170,33 @@ export default function Scan4CallContact() {
                                     maxLength={10}
                                     disabled={otpSent}
                                     inputMode="numeric"
-                                    style={{ minWidth: 0 }}
+                                    style={{ minWidth: 0, fontFamily: 'var(--font-montserrat)' }}
                                 />
                             </div>
                         </div>
-                        {otpError && (
-                            <div className="text-red-500 text-xs mb-2">{otpError}</div>
+                        {/* Prompt for missing number message */}
+                        {promptPhoneMsg && (
+                            <div className="text-red-500 text-xs mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>{promptPhoneMsg}</div>
                         )}
-                        <p className="text-sm text-gray-600 mb-2">
-                            We’ll connect you directly to the vehicle owner {' '}
+                        {otpError && (
+                            <div className="text-red-500 text-xs mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>{otpError}</div>
+                        )}
+                        <p className="text-sm text-gray-600 mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                            We’ll connect you directly to the vehicle owner{' '}
                             <span className="font-semibold" style={{
-                                color: ROYAL_BLUE
+                                color: ROYAL_BLUE,
+                                fontFamily: 'var(--font-montserrat)'
                             }}>Completely free of Cost.</span>
                         </p>
-
-
                     </div>
 
                     {/* Call Button */}
                     <button
                         onClick={() => handleSendOtp('owner')}
-                        disabled={!phoneNumber || phoneNumber.length < 10 || isLoading}
+                        disabled={isLoading}
                         style={{
-                            background: VIBRANT_GREEN
+                            background: VIBRANT_GREEN,
+                            fontFamily: 'var(--font-montserrat)'
                         }}
                         className="w-full text-white disabled:cursor-not-allowed text-black font-bold py-4 px-6 rounded-full flex items-center justify-center gap-2 mb-4 transition-colors"
                     >
@@ -186,10 +209,10 @@ export default function Scan4CallContact() {
                         <CheckCircle className="w-5 h-5" style={{
                             color: TEAL_CYAN
                         }} />
-                        <p className="text-sm text-gray-600">Your number will stay private.</p>
+                        <p className="text-sm text-gray-600" style={{ fontFamily: 'var(--font-montserrat)' }}>Your number will stay private.</p>
                     </div>
 
-                    {/* Urdu Privacy Text */}
+                    {/* Urdu Privacy Text (no Montserrat) */}
                     <p className="text-sm text-gray-600 mb-8 text-center font-urdu" dir="rtl">
                         آپ کا نمبر محفوظ رہے گا
                     </p>
@@ -197,13 +220,16 @@ export default function Scan4CallContact() {
                     {/* Emergency Button */}
                     <button
                         onClick={() => handleSendOtp('emergency')}
-                        disabled={!phoneNumber || phoneNumber.length < 10 || isLoading}
+                        disabled={isLoading}
+                        style={{
+                            fontFamily: 'var(--font-montserrat)'
+                        }}
                         className="bg-red-500 hover:bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-bold py-3 px-12 rounded-full flex items-center justify-center gap-2 mb-2 transition-colors"
                     >
                         <AlertCircle className="w-5 h-5" />
                         Emergency
                     </button>
-                    <p className="text-sm text-gray-600 text-center">
+                    <p className="text-sm text-gray-600 text-center" style={{ fontFamily: 'var(--font-montserrat)' }}>
                         For accidents or emergencies only
                     </p>
                 </>
@@ -211,14 +237,16 @@ export default function Scan4CallContact() {
 
             {/* OTP Workflow (COMMON for both contact types) */}
             {otpSent && !otpVerified && (
-                <div className="mb-3 mt-2 bg-gradient-to-r from-[#FFFDE0] to-[#FFF3F0] px-5 py-5 rounded-lg flex flex-col items-center gap-2 w-full max-w-md">
-                    <div className={`w-full text-center mb-1 font-semibold ${contactType === "owner" ? "text-[#1a365d]" : "text-[#c95e26]"}`}>
+                <div className="mb-3 mt-2 bg-gradient-to-r from-[#FFFDE0] to-[#FFF3F0] px-5 py-5 rounded-lg flex flex-col items-center gap-2 w-full max-w-md"
+                    style={{ fontFamily: 'var(--font-montserrat)' }}>
+                    <div className={`w-full text-center mb-1 font-semibold ${contactType === "owner" ? "text-[#1a365d]" : "text-[#c95e26]"}`}
+                        style={{ fontFamily: 'var(--font-montserrat)' }}>
                         {contactType === 'owner'
                             ? 'Verify Your Phone Number'
                             : 'Verify for Emergency Contact'}
                     </div>
-                    <div className="w-full text-sm text-gray-600 text-center mb-1">
-                        Enter the 4-digit code sent to <span className="font-medium">+92{phoneNumber}</span>
+                    <div className="w-full text-sm text-gray-600 text-center mb-1" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                        Enter the 4-digit code sent to <span className="font-medium" style={{ fontFamily: 'var(--font-montserrat)' }}>+92{phoneNumber}</span>
                     </div>
                     <div className="flex gap-2 mb-2">
                         {otp.map((digit, idx) => (
@@ -232,14 +260,15 @@ export default function Scan4CallContact() {
                                 onChange={e => handleOtpChange(e, idx)}
                                 onKeyDown={e => handleOtpKeyDown(e, idx)}
                                 className="w-10 h-12 border border-gray-300 text-center text-black text-2xl font-bold rounded focus:border-blue-400 outline-none bg-white"
+                                style={{ fontFamily: 'var(--font-montserrat)' }}
                             />
                         ))}
                     </div>
                     <button
                         className={`mt-2 font-semibold px-6 py-2 rounded-full transition-all hover:shadow-lg text-white ${contactType === 'owner'
                             ? 'bg-gradient-to-r from-[#0052CC] to-[#00BCD4]'
-                            : 'bg-gradient-to-r from-[#FF8A65] to-[#FF5252]'
-                            }`}
+                            : 'bg-gradient-to-r from-[#FF8A65] to-[#FF5252]'}`}
+                        style={{ fontFamily: 'var(--font-montserrat)' }}
                         onClick={handleVerifyOtp}
                     >
                         Verify OTP
@@ -248,40 +277,44 @@ export default function Scan4CallContact() {
                     <div className="flex flex-col items-center mt-1">
                         <button
                             className="text-xs text-blue-900 underline disabled:opacity-40 disabled:pointer-events-none"
+                            style={{ fontFamily: 'var(--font-montserrat)' }}
                             onClick={handleResendOtp}
                             disabled={resendTimer > 0}
                         >
                             Resend OTP
                         </button>
                         {resendTimer > 0 && (
-                            <span className="text-xs text-gray-500 mt-1">
+                            <span className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'var(--font-montserrat)' }}>
                                 Please wait {resendTimer}s to resend OTP
                             </span>
                         )}
                     </div>
                     <button
                         className="text-xs text-blue-500 underline mt-1"
+                        style={{ fontFamily: 'var(--font-montserrat)' }}
                         onClick={resetAll}
                     >
                         {contactType === "owner" ? "Change phone number" : "Cancel Emergency Contact"}
                     </button>
                     {otpError && (
-                        <div className="text-red-500 text-xs mt-2">{otpError}</div>
+                        <div className="text-red-500 text-xs mt-2" style={{ fontFamily: 'var(--font-montserrat)' }}>{otpError}</div>
                     )}
                 </div>
             )}
 
             {otpVerified && contactType === "owner" && (
-                <div className="mb-3 mt-2 bg-gradient-to-r from-[#D4FFEC] to-[#BDF4D7] px-5 py-4 rounded-lg flex flex-col items-center gap-2 w-full max-w-md">
-                    <div className="w-full text-center text-green-700 font-semibold">
+                <div className="mb-3 mt-2 bg-gradient-to-r from-[#D4FFEC] to-[#BDF4D7] px-5 py-4 rounded-lg flex flex-col items-center gap-2 w-full max-w-md"
+                    style={{ fontFamily: 'var(--font-montserrat)' }}>
+                    <div className="w-full text-center text-green-700 font-semibold" style={{ fontFamily: 'var(--font-montserrat)' }}>
                         Phone number verified!
                     </div>
                 </div>
             )}
 
             {otpVerified && contactType === "emergency" && (
-                <div className="mb-3 mt-2 bg-gradient-to-r from-[#FFDFDF] to-[#FFF8F0] px-5 py-4 rounded-lg flex flex-col items-center gap-2 w-full max-w-md">
-                    <div className="w-full text-center text-[#e32d2d] font-semibold">
+                <div className="mb-3 mt-2 bg-gradient-to-r from-[#FFDFDF] to-[#FFF8F0] px-5 py-4 rounded-lg flex flex-col items-center gap-2 w-full max-w-md"
+                    style={{ fontFamily: 'var(--font-montserrat)' }}>
+                    <div className="w-full text-center text-[#e32d2d] font-semibold" style={{ fontFamily: 'var(--font-montserrat)' }}>
                         Emergency contact confirmed!
                     </div>
                 </div>
