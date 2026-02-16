@@ -3,6 +3,8 @@ import Scan4CallContact from './component/AskingNumber'
 
 export default function page() {
   return (
-    <Scan4CallContact></Scan4CallContact>
+    <div className="min-h-screen h-screen overflow-hidden p-0 m-0">
+      <Scan4CallContact />
+    </div>
   )
 }
