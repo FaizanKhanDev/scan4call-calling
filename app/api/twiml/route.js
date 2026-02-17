@@ -11,8 +11,12 @@ export async function POST(req) {
     const targetNumber = formData.get('To');
 
 
+    if (!targetNumber) {
+        return new Response("Missing 'To' number", { status: 400 });
+    }
+
     // Add the callerId here inside an object
-    response.dial({ callerId: myTwilioNumber }, phoneNumber);
+    response.dial({ callerId: myTwilioNumber }, targetNumber);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
@@ -22,7 +26,14 @@ export async function POST(req) {
 // Update GET handler as well
 export async function GET(req) {
     const response = new TwilioTwiml.VoiceResponse();
-    response.dial({ callerId: myTwilioNumber }, phoneNumber);
+    const targetNumber = req.url.includes('To=')
+        ? new URL(req.url).searchParams.get('To')
+        : null;
+
+    if (!targetNumber) {
+        return new Response("Missing 'To' number", { status: 400 });
+    }
+    response.dial({ callerId: myTwilioNumber }, targetNumber);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
