@@ -191,7 +191,8 @@ export default function Scan4CallContact() {
 
     return (
         <div
-            className="min-h-screen bg-white flex flex-col items-center justify-start px-6 py-1 sm:hidden"
+            // sm:hidden
+            className="min-h-screen bg-white flex flex-col items-center justify-start px-6 py-1 "
             style={{ fontFamily: 'var(--font-montserrat)' }}
         >
             {/* Logo */}
