@@ -1,31 +1,39 @@
 import { twiml as TwilioTwiml } from 'twilio';
 
-const myTwilioNumber = '+16268871097';
+// The number you want to call
+let phoneNumber = '+923162177746';
+// YOUR Twilio trial number (must include '+')
+let myTwilioNumber = '+16268871097';
 
 export async function POST(req) {
     const response = new TwilioTwiml.VoiceResponse();
+    const formData = await req.formData();
+    const targetNumber = formData.get('To');
 
-    // Try to get 'dialTo' from URL params first, then from the body
-    const url = new URL(req.url);
-    let targetNumber = url.searchParams.get('dialTo');
-
-    if (!targetNumber) {
-        const formData = await req.formData();
-        targetNumber = formData.get('dialTo');
-    }
 
     if (!targetNumber) {
-        return new Response("Missing 'dialTo' number", { status: 400 });
+        return new Response("Missing 'To' number", { status: 400 });
     }
 
-    const dial = response.dial({ callerId: myTwilioNumber });
+    // Add the callerId here inside an object
+    response.dial({ callerId: myTwilioNumber }, phoneNumber);
 
-    // Crucial: Use .number() to apply the statusCallback
-    dial.number({
-        statusCallback: 'https://scan4call-calling.vercel.app',
-        statusCallbackEvent: 'initiated ringing answered completed',
-        statusCallbackMethod: 'POST'
-    }, targetNumber);
+    return new Response(response.toString(), {
+        headers: { 'Content-Type': 'text/xml' },
+    });
+}
+
+// Update GET handler as well
+export async function GET(req) {
+    const response = new TwilioTwiml.VoiceResponse();
+    const targetNumber = req.url.includes('To=')
+        ? new URL(req.url).searchParams.get('To')
+        : null;
+
+    if (!targetNumber) {
+        return new Response("Missing 'To' number", { status: 400 });
+    }
+    response.dial({ callerId: myTwilioNumber }, phoneNumber);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
