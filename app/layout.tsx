@@ -4,7 +4,11 @@ import { Noto_Nastaliq_Urdu } from 'next/font/google'
 import { Montserrat } from 'next/font/google'
 import { Poppins } from 'next/font/google'
 import "./globals.css";
+import { Providers } from "./providers";
 
+// Note: Usage of Redux Provider/store is NOT SUPPORTED in React Server Components
+// So, we remove the Provider and store import from this file
+// If you need Redux, wrap client entry with Provider instead
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -23,7 +27,6 @@ const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 
 const notoUrdu = Noto_Nastaliq_Urdu({
   subsets: ['arabic'],
@@ -52,7 +55,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
