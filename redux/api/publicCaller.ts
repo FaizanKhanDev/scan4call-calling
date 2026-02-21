@@ -30,10 +30,20 @@ export const publicCallerApi = createApi({
             }),
         }),
 
+
+        reSentOTP: builder.mutation({
+            query: (credentials) => ({
+                url: `/resent-otp`,
+                method: 'POST',
+                body: credentials
+            }),
+        }),
+
     }),
 });
 
 export const {
     useInitializeCallMutation, /* ----- function: initializeCall (endPoint:/initialize-call-access) ----- */
     useVerifyPhoneNumberMutation, /* ----- function: verifyPhoneNumber (endPoint:/verify-phone) ----- */
+    useReSentOTPMutation, /* ----- function: reSentOTP (endPoint:/resent-otp) ----- */
 } = publicCallerApi;

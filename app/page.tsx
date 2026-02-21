@@ -5,7 +5,7 @@ import Scan4CallContact from "./component/AskingNumber";
 import Calling from "./component/Calling";
 
 export default function Page() {
-  const [startCalling, setStartCalling] = useState(true)
+  const [startCalling, setStartCalling] = useState(false)
   // useEffect(() => {
   //   // Function to detect desktop / large screen
   //   const checkDesktop = () => {
@@ -64,13 +64,13 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-[#07132C] overflow-hidden p-0 m-0">
-      {/* { */}
-      {/* startCalling ? ( */}
-      <Calling />
-      {/* ) : ( */}
-      <Scan4CallContact setStartCalling={setStartCalling} />
-      {/* ) */}
-      {/* } */}
+      {
+        startCalling ? (
+          <Calling />
+        ) : (
+          <Scan4CallContact setStartCalling={setStartCalling} />
+        )
+      }
     </div>
   );
 }

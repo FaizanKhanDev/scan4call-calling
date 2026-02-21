@@ -1,7 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-    callType: "GENERAL"
+    callType: "GENERAL",
+    token: "",
 
 };
 
@@ -12,8 +13,11 @@ const publicCallerSlices = createSlice({
         setCallType: (state, action) => {
             state.callType = action.payload;
         },
+        setToken: (state, action) => {
+            state.token = action.payload;
+        },
     },
 });
 
-export const { setCallType } = publicCallerSlices.actions;
+export const { setCallType, setToken } = publicCallerSlices.actions;
 export default publicCallerSlices.reducer;

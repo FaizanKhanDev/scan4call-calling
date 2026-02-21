@@ -11,8 +11,8 @@ import { useInitializeCallMutation, useVerifyPhoneNumberMutation } from '@/redux
 import { getFingerprint, getUserLocation } from '@/helpers';
 import { v4 as uuidv4 } from "uuid";
 import countryCodes from '@/constant/countryCodes';
-import { setCallType } from '@/redux/slices/publicCallerSlices';
-
+import { setCallType, setToken } from '@/redux/slices/publicCallerSlices';
+import { useReSentOTPMutation } from '@/redux/api/publicCaller';
 // --- New: For storing callerId/token from init call ---
 type InitCallData = {
     callerId?: number,
@@ -35,6 +35,7 @@ export default function Scan4CallContact({
 
     const [initializeCallApi] = useInitializeCallMutation();
     const [verifyPhoneNumberApi] = useVerifyPhoneNumberMutation();
+    const [reSentOTPApi, { isLoading: isResendLoading }] = useReSentOTPMutation();
 
     const { data } = useGetqrCodeByIdQuery({
         code: code
@@ -123,12 +124,16 @@ export default function Scan4CallContact({
     }
 
     // This is now a workflow step setter
-    const askPermissionsAndSendOtp = async (type: 'owner' | 'emergency', callerIdFromCallApi?: number | null) => {
+    const askPermissionsAndSendOtp = async (type: 'owner' | 'emergency', callerIdFromCallApi?: number | null, isNewNumber?: boolean) => {
         setPermissionStep('requesting');
         setPermissionError('');
         // No permissions requested in UI (uncomment if needed)
         setPermissionStep('done');
         // CALL handleSendOtp with optional callerId to wire flow
+        if (!isNewNumber) {
+            setStartCalling(true)
+            return
+        }
         handleSendOtp(type, callerIdFromCallApi);
     };
 
@@ -174,9 +179,11 @@ export default function Scan4CallContact({
         };
 
         try {
-            const res = await verifyPhoneNumberApi(verifyPayload);
+            const res = await verifyPhoneNumberApi(verifyPayload).unwrap();
+            console.log("responseData?.data?.token", res);
+
             // RTK Query returns {data, error,...}
-            const responseData = (res as any)?.data;
+            const responseData = res;
             if (
                 responseData &&
                 responseData.status === "sucesss"
@@ -184,6 +191,7 @@ export default function Scan4CallContact({
                 setOtpVerified(true);
                 setOtpError('');
                 setStartCalling(true)
+                dispatch(setToken(responseData?.data?.token))
             } else {
                 setOtpError(responseData?.message || "OTP verification failed. Please try again.");
             }
@@ -259,11 +267,33 @@ export default function Scan4CallContact({
 
     const userAgent = typeof window !== "undefined" ? navigator.userAgent : "";
 
-    // Resend OTP reuses initCallData (no actual API re-send in this UI)
-    const handleResendOtp = () => {
+    // Resend OTP API implementation
+    const handleResendOtp = async () => {
         setOtp(['', '', '', '']);
         setOtpError('');
         setResendTimer(30);
+
+        // Call the reSentOTP API with callerId, phone, otp
+        try {
+            // Must have callerId (from initialize call) and phone
+            if (!initCallData?.callerId) {
+                setOtpError('Cannot resend OTP. Missing callerId.');
+                return;
+            }
+
+            const payload = {
+                callerId: initCallData.callerId,
+                phone: `${dialCountry.dialCode}${phoneNumber}`,
+
+            };
+
+            let response = await reSentOTPApi(payload).unwrap();
+            console.log("response", response);
+
+            // Optionally, you could show a message: "OTP resent!"
+        } catch (e: any) {
+            setOtpError("Failed to resend OTP. Please try again.");
+        }
     };
 
     // --- MAIN: Handle "Call Vehicle Owner" ---
@@ -294,18 +324,17 @@ export default function Scan4CallContact({
                 location: "",
             }
 
-            let result = await initializeCallApi(payload);
+            let result = await initializeCallApi(payload).unwrap()
             if (
                 result &&
+                result.status === 'sucesss' &&
                 result.data &&
-                result.data.status === 'sucesss' &&
-                result.data.data &&
-                typeof result.data.data.callerId !== "undefined"
+                typeof result.data.callerId !== "undefined"
             ) {
                 // Store callerId/token for use in verify step
-                setInitCallData(result.data.data as InitCallData);
+                setInitCallData(result.data as InitCallData);
                 // Go to permissions/OTP entry, supplying the callerId
-                askPermissionsAndSendOtp('owner', result.data.data.callerId);
+                askPermissionsAndSendOtp('owner', result.data.callerId, result?.data?.isNewNumber);
             } else {
                 setPromptPhoneMsg("Failed to initiate call. Please try again.");
             }
@@ -510,9 +539,9 @@ export default function Scan4CallContact({
                             className="text-xs text-blue-900 underline disabled:opacity-40 disabled:pointer-events-none"
                             style={{ fontFamily: 'var(--font-montserrat)' }}
                             onClick={handleResendOtp}
-                            disabled={resendTimer > 0}
+                            disabled={resendTimer > 0 || isResendLoading}
                         >
-                            Resend OTP
+                            {isResendLoading ? 'Resending...' : 'Resend OTP'}
                         </button>
                         {resendTimer > 0 && (
                             <span className="text-xs text-gray-500 mt-1" style={{ fontFamily: 'var(--font-montserrat)' }}>
