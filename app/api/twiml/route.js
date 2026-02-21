@@ -12,7 +12,7 @@ export async function GET(req) {
     const response = new TwilioTwiml.VoiceResponse();
 
     response.say("Hello. Connecting your call.");
-    response.dial("+1234567890");
+    response.dial({ callerId: myTwilioNumber }, to);
 
     return new Response(response.toString(), {
         headers: {
