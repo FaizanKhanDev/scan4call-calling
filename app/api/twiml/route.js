@@ -15,10 +15,7 @@ export async function POST(req) {
     }
 
     // Validate E.164 number
-    if (!/^\+?\d{10,15}$/.test(targetNumber)) {
-        return new Response("Invalid phone number format", { status: 400 });
-    }
-
+   
     response.dial({ callerId: myTwilioNumber }).number(targetNumber);
 
     return new Response(response.toString(), {
