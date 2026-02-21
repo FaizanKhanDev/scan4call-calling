@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const publicCallerApi = createApi({
     reducerPath: 'publicCallerApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: `${API_URL}/api/v1/orders`,
+        baseUrl: `${API_URL}/api/v1/publiccaller`,
         prepareHeaders: async (headers) => {
             headers.set('X-App-Key', APP_API_KEY);
             headers.set('Accept', 'application/json');
@@ -14,9 +14,17 @@ export const publicCallerApi = createApi({
     }),
 
     endpoints: (builder) => ({
-        placeOrder: builder.mutation({
+        initializeCall: builder.mutation({
             query: (credentials) => ({
-                url: `/place-order`,
+                url: `/initialize-call-access`,
+                method: 'POST',
+                body: credentials
+            }),
+        }),
+
+        verifyPhoneNumber: builder.mutation({
+            query: (credentials) => ({
+                url: `/verify-phone`,
                 method: 'POST',
                 body: credentials
             }),
@@ -26,5 +34,6 @@ export const publicCallerApi = createApi({
 });
 
 export const {
-    usePlaceOrderMutation, /* ----- function: placeOrder (endPoint:/place-order) ----- */
+    useInitializeCallMutation, /* ----- function: initializeCall (endPoint:/initialize-call-access) ----- */
+    useVerifyPhoneNumberMutation, /* ----- function: verifyPhoneNumber (endPoint:/verify-phone) ----- */
 } = publicCallerApi;

@@ -5,8 +5,8 @@ import { Phone, CheckCircle, AlertCircle } from 'lucide-react'
 import { ROYAL_BLUE, TEAL_CYAN, VIBRANT_GREEN } from '@/constant/color';
 import { useSearchParams } from 'next/navigation'
 import { useGetqrCodeByIdQuery } from '@/redux/api/qrCode';
-// Use montserrat for all non-Urdu text by inline style
-
+import { addDataToQrCode } from '@/redux/slices/qrCodeSlices';
+import { useDispatch } from 'react-redux';
 export default function Scan4CallContact() {
 
     const searchParams = useSearchParams();
@@ -14,11 +14,20 @@ export default function Scan4CallContact() {
     const key = searchParams.get('key');
     const code = searchParams.get('code');
     const sno = searchParams.get('sno');
+    const dispatch = useDispatch();
+
+
     const { data } = useGetqrCodeByIdQuery({
         code: code
-    })
+    });
 
-    console.log("type", type, "key", key, "code", code, "sno", sno);
+
+    useEffect(() => {
+        if (data && data.status == "sucesss") {
+            dispatch(addDataToQrCode(data?.data))
+        }
+    }, [data])
+
 
 
     // Phone number OTP states (COMMON)
