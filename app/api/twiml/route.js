@@ -24,6 +24,8 @@ export async function POST(req) {
     });
 }
 
+
+
 // Update GET handler as well
 export async function GET(req) {
     const response = new TwilioTwiml.VoiceResponse();
