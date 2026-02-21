@@ -205,7 +205,7 @@ export default function Scan4CallContact({
         const verifyPayload = {
             callerId: finalCallerId,
             qrCodeId: code,
-            phone: `+${dialCountry.dialCode}${phoneNumber}`,
+            phone: `${dialCountry.dialCode}${phoneNumber}`,
             otp: otp.join("")
         };
 
@@ -303,7 +303,7 @@ export default function Scan4CallContact({
 
             const payload = {
                 callerId: initCallData.callerId,
-                phone: `+${dialCountry.dialCode}${phoneNumber}`,
+                phone: `${dialCountry.dialCode}${phoneNumber}`,
             };
 
             await reSentOTPApi(payload).unwrap();
@@ -357,7 +357,7 @@ export default function Scan4CallContact({
                 networkId: "",
                 userAgent: userAgent,
                 fingerprint: fingerprint,
-                phone: `+${dialCountry.dialCode}${phoneNumber}`,
+                phone: `${dialCountry.dialCode}${phoneNumber}`,
                 location: `${geoLocation?.latitude ?? ""} ${geoLocation?.longitude ?? ""}`,
             }
 
