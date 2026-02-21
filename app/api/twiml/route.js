@@ -34,7 +34,10 @@ export async function GET(req) {
     if (!targetNumber) {
         return new Response("Missing 'To' number", { status: 400 });
     }
-    response.dial({ callerId: myTwilioNumber }, targetNumber);
+
+    let number = `+${targetNumber}`
+
+    response.dial({ callerId: myTwilioNumber }, number);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
