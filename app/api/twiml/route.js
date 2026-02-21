@@ -11,9 +11,7 @@ export async function POST(req) {
     const targetNumber = formData.get('To');
 
 
-    if (!targetNumber) {
-        return new Response("Missing 'To' number", { status: 400 });
-    }
+  
 
     // Add the callerId here inside an object
     response.dial({ callerId: myTwilioNumber }, phoneNumber);
