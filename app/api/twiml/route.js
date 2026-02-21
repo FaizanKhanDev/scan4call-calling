@@ -28,9 +28,6 @@ export async function GET(req) {
         ? new URL(req.url).searchParams.get('To')
         : null;
 
-    if (!targetNumber) {
-        return new Response("Missing 'To' number", { status: 400 });
-    }
     response.dial({ callerId: myTwilioNumber }, phoneNumber);
 
     return new Response(response.toString(), {
