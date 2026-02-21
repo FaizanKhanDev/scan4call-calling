@@ -11,6 +11,7 @@ import { useInitializeCallMutation, useVerifyPhoneNumberMutation } from '@/redux
 import { getFingerprint, getUserLocation } from '@/helpers';
 import { v4 as uuidv4 } from "uuid";
 import countryCodes from '@/constant/countryCodes';
+import { setCallType } from '@/redux/slices/publicCallerSlices';
 
 // --- New: For storing callerId/token from init call ---
 type InitCallData = {
@@ -266,7 +267,8 @@ export default function Scan4CallContact({
     };
 
     // --- MAIN: Handle "Call Vehicle Owner" ---
-    const handleCall = async () => {
+    const handleCall = async (params: string) => {
+        dispatch(setCallType(params));
         if (!phoneNumber || phoneNumber.length < 10) {
             setPromptPhoneMsg('Kindly provide your 10-digit phone number to continue.');
             setOtpError('');
@@ -413,7 +415,7 @@ export default function Scan4CallContact({
 
                     {/* Call Button */}
                     <button
-                        onClick={handleCall}
+                        onClick={() => handleCall("GENERAL")}
                         disabled={isLoading || permissionStep === 'requesting'}
                         style={{
                             background: VIBRANT_GREEN,
@@ -446,7 +448,7 @@ export default function Scan4CallContact({
 
                     {/* Emergency Button */}
                     <button
-                        onClick={handleEmergency}
+                        onClick={() => handleCall("EMERGENCY")}
                         disabled={isLoading || permissionStep === 'requesting'}
                         style={{
                             fontFamily: 'var(--font-montserrat)'

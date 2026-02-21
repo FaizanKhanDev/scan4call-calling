@@ -1,20 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-    productList: [] as any,
+    callType: "GENERAL"
+
 };
 
 const publicCallerSlices = createSlice({
     name: 'publicCaller',
     initialState,
     reducers: {
-        removeProductFromList: (state, action) => {
-            state.productList = state.productList.filter(
-                (product: any) => product.id !== action.payload
-            );
+        setCallType: (state, action) => {
+            state.callType = action.payload;
         },
     },
 });
 
-export const { removeProductFromList } = publicCallerSlices.actions;
+export const { setCallType } = publicCallerSlices.actions;
 export default publicCallerSlices.reducer;

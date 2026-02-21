@@ -7,7 +7,7 @@ import { qRCodeApi } from './api/qrCode';
 export const store = configureStore({
     reducer: {
         publicCaller: publicCallerReducer,
-        qrCodeSlicesReducer: qrCodeSlicesReducer,
+        qrCode: qrCodeSlicesReducer,
         [publicCallerApi.reducerPath]: publicCallerApi.reducer,
         [qRCodeApi.reducerPath]: qRCodeApi.reducer
     },

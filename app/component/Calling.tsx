@@ -2,12 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { VIBRANT_GREEN } from '@/constant/color';
 import { Phone } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import BLOOD_GROUPS from '@/constant/bloodGroups';
 
 const CALLER_IMAGE = 'https://cdn-icons-png.flaticon.com/512/1946/1946429.png';
 
 // Example blood group and emergency notes -- in a real app, these would be props or context
-const BLOOD_GROUP = 'B+';
-const EMERGENCY_NOTES = "Allergic to penicillin. In case of emergency, call his wife at 9999900000.";
 
 function formatDuration(sec: number) {
     const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
@@ -19,8 +19,11 @@ export default function Calling() {
     const [callDuration, setCallDuration] = useState(0); // In seconds
     const [callActive, setCallActive] = useState(false);
     const [ringing, setRinging] = useState(true);
+    const { qrCodeData } = useSelector((state: any) => state.qrCode)
+    const findBloodGroup = BLOOD_GROUPS.find((item) => item.key == qrCodeData?.user?.bloodGroup);
 
-    // For simple pulse animation using CSS classes
+
+    // For simple pulse animation using CSS classes 
     const [pulsing, setPulsing] = useState(true);
 
     useEffect(() => {
@@ -163,7 +166,7 @@ export default function Calling() {
                             Blood Group:
                         </span>
                         <span className="ml-1 text-sm font-bold text-[#2fd898]" style={{ fontFamily: 'var(--font-montserrat)' }}>
-                            {BLOOD_GROUP}
+                            {findBloodGroup?.label}
                         </span>
                     </div>
                 </div>
@@ -171,7 +174,7 @@ export default function Calling() {
                     {/* Added flex, justify-center, and text-center to center content */}
                     <span className="text-xs text-[#FFD5B7] font-medium block break-words text-center" style={{ fontFamily: 'var(--font-montserrat)', letterSpacing: 0 }}>
                         <span className="font-bold text-[#ff9724]">Emergency Notes:</span>{" "}
-                        <span>{EMERGENCY_NOTES}</span>
+                        <span>{qrCodeData?.user?.emergencyNotes}</span>
                     </span>
                 </div>
             </div>
