@@ -1,14 +1,36 @@
-import { twiml as TwilioTwiml } from "twilio";
+import { twiml as TwilioTwiml } from 'twilio';
 
-const myTwilioNumber = "+16268871097";
+// The number you want to call
+let phoneNumber = '+923162177746';
+// YOUR Twilio trial number (must include '+')
+let myTwilioNumber = '+16268871097';
 
 export async function POST(req) {
     const response = new TwilioTwiml.VoiceResponse();
-    const bodyText = await req.text();
-    const params = new URLSearchParams(bodyText);
-    const targetNumber = params.get("To") || params.get("dialTo");
-    response.dial({ callerId: myTwilioNumber }).number("+923162177746");
+    const formData = await req.formData();
+    const targetNumber = formData.get('To');
+
+
+    if (!targetNumber) {
+        return new Response("Missing 'To' number", { status: 400 });
+    }
+
+    // Add the callerId here inside an object
+    response.dial({ callerId: myTwilioNumber }, targetNumber);
+
     return new Response(response.toString(), {
-        headers: { "Content-Type": "text/xml" },
+        headers: { 'Content-Type': 'text/xml' },
+    });
+}
+
+// Update GET handler as well
+export async function GET(req) {
+    const response = new TwilioTwiml.VoiceResponse();
+    const toNumber = req.body.To || req.body.dialTo; // Called number
+
+    response.dial({ callerId: myTwilioNumber }, toNumber);
+
+    return new Response(response.toString(), {
+        headers: { 'Content-Type': 'text/xml' },
     });
 }
