@@ -108,8 +108,7 @@ export default function Calling() {
         if (!device) return;
 
         const params = {
-            To: "+923162177746",
-            // To: callType == "GENERAL" ? qrCodeData?.user?.phone : qrCodeData?.user?.emergencyPhone,
+            "To": "+923162177746",
         };
 
         const connection = await device.connect(params as any);
