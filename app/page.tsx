@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Scan4CallContact from "./component/AskingNumber";
 import Calling from "./component/Calling";
 
 export default function Page() {
+  const [startCalling, setStartCalling] = useState(false)
   // useEffect(() => {
   //   // Function to detect desktop / large screen
   //   const checkDesktop = () => {
@@ -63,8 +64,13 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-[#07132C] overflow-hidden p-0 m-0">
-      <Scan4CallContact />
-      <Calling />
+      {
+        startCalling ? (
+          <Calling />
+        ) : (
+          <Scan4CallContact setStartCalling={setStartCalling} />
+        )
+      }
     </div>
   );
 }
