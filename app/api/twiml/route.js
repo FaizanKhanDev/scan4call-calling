@@ -4,17 +4,10 @@ const myTwilioNumber = "+16268871097"; // your Twilio number
 
 export async function POST(req) {
     const response = new TwilioTwiml.VoiceResponse();
-
-    // Twilio sends URL-encoded form data
-    const bodyText = await req.text(); // read raw body
+    const bodyText = await req.text();
     const params = new URLSearchParams(bodyText);
     const targetNumber = params.get("To") || params.get("dialTo");
-
-
-    // Validate E.164 number
-
     response.dial({ callerId: myTwilioNumber }).number(targetNumber);
-
     return new Response(response.toString(), {
         headers: { "Content-Type": "text/xml" },
     });
