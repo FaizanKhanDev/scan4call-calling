@@ -1,8 +1,5 @@
 import { twiml as TwilioTwiml } from 'twilio';
 
-// The number you want to call
-let phoneNumber = '+923162177746';
-// YOUR Twilio trial number (must include '+')
 let myTwilioNumber = '+16268871097';
 
 export async function POST(req) {
@@ -10,36 +7,41 @@ export async function POST(req) {
     const formData = await req.formData();
     const targetNumber = formData.get('To');
 
-
     if (!targetNumber) {
         return new Response("Missing 'To' number", { status: 400 });
     }
 
-    // Add the callerId here inside an object
-    let number = `+${targetNumber}`
-    response.dial({ callerId: myTwilioNumber }, targetNumber);
+    // Initialize dial with the callerId
+    const dial = response.dial({ callerId: myTwilioNumber });
+
+    // Use .number() to specify the target AND the statusCallback attributes
+    dial.number({
+        statusCallback: 'https://scan4call-calling.vercel.app',
+        statusCallbackEvent: 'initiated ringing answered completed',
+        statusCallbackMethod: 'POST'
+    }, targetNumber);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
     });
 }
 
-
-
-// Update GET handler as well
+// Update GET handler similarly
 export async function GET(req) {
     const response = new TwilioTwiml.VoiceResponse();
-    const targetNumber = req.url.includes('To=')
-        ? new URL(req.url).searchParams.get('To')
-        : null;
+    const url = new URL(req.url);
+    const targetNumber = url.searchParams.get('To');
 
     if (!targetNumber) {
         return new Response("Missing 'To' number", { status: 400 });
     }
 
-    let number = `+${targetNumber}`
-
-    response.dial({ callerId: myTwilioNumber }, targetNumber);
+    const dial = response.dial({ callerId: myTwilioNumber });
+    dial.number({
+        statusCallback: 'https://scan4call-calling.vercel.app',
+        statusCallbackEvent: 'initiated ringing answered completed',
+        statusCallbackMethod: 'POST'
+    }, targetNumber);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
