@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import countryCodes from '@/constant/countryCodes';
 import { setCallType, setToken } from '@/redux/slices/publicCallerSlices';
 import { useReSentOTPMutation } from '@/redux/api/publicCaller';
-// --- New: For storing callerId/token from init call ---
+
 type InitCallData = {
     callerId?: number,
     token?: string,
@@ -56,9 +56,13 @@ export default function Scan4CallContact({
     const [isLoading, setIsLoading] = useState(false);
     const [promptPhoneMsg, setPromptPhoneMsg] = useState('');
     const [permissionError, setPermissionError] = useState('');
-    const [permissionStep, setPermissionStep] = useState<'idle' | 'requesting' | 'done'>('idle');
+    const [permissionStep, setPermissionStep] = useState<'idle' | 'requesting' | 'done' | 'error'>('idle');
     const [contactType, setContactType] = useState<'owner' | 'emergency' | null>(null);
     const [resendTimer, setResendTimer] = useState(0);
+
+    // Permissions state
+    const [microphoneGranted, setMicrophoneGranted] = useState<boolean>(false);
+    const [locationGranted, setLocationGranted] = useState<boolean>(false);
 
     // Store init call server response to verify OTP later
     const [initCallData, setInitCallData] = useState<InitCallData | null>(null);
@@ -92,7 +96,6 @@ export default function Scan4CallContact({
         if (permissionError) setPermissionError('');
     }
 
-    // Permissions (kept as in original, not enforced)
     async function requestMicrophonePermission() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             return { granted: false, message: "Microphone permissions are not supported on this device." };
@@ -123,12 +126,45 @@ export default function Scan4CallContact({
         });
     }
 
+    // Ask permissions on load
+    useEffect(() => {
+        const askAllPermissions = async () => {
+            setPermissionStep('requesting');
+            setPermissionError('');
+            // Microphone
+            const mic = await requestMicrophonePermission();
+            if (!mic.granted) {
+                setPermissionError(mic.message || "Microphone permission denied.");
+                setPermissionStep('error');
+                setMicrophoneGranted(false);
+                setLocationGranted(false);
+                return;
+            } else {
+                setMicrophoneGranted(true);
+            }
+            // Location
+            const loc = await requestLocationPermission();
+            if (!loc.granted) {
+                setPermissionError(loc.message || "Location permission denied.");
+                setPermissionStep('error');
+                setLocationGranted(false);
+                return;
+            } else {
+                setLocationGranted(true);
+            }
+            setPermissionStep('done');
+            setPermissionError('');
+        };
+        askAllPermissions();
+    }, []);
+
     // This is now a workflow step setter
     const askPermissionsAndSendOtp = async (type: 'owner' | 'emergency', callerIdFromCallApi?: number | null, isNewNumber?: boolean) => {
-        setPermissionStep('requesting');
-        setPermissionError('');
-        // No permissions requested in UI (uncomment if needed)
-        setPermissionStep('done');
+        // Permissions are now required up-front, so just check status here
+        if (permissionStep !== 'done' || !microphoneGranted || !locationGranted) {
+            setPermissionError('Permissions are required to proceed. Please allow microphone and location access.');
+            return;
+        }
         // CALL handleSendOtp with optional callerId to wire flow
         if (!isNewNumber) {
             setStartCalling(true)
@@ -137,7 +173,6 @@ export default function Scan4CallContact({
         handleSendOtp(type, callerIdFromCallApi);
     };
 
-    // handleSendOtp optionally gets a callerId (usually from init call API)
     const handleSendOtp = (type: 'owner' | 'emergency', callerIdFromCallApi?: number | null) => {
         if (!phoneNumber || phoneNumber.length < 10) {
             setPromptPhoneMsg('Kindly provide your 10-digit phone number to continue.');
@@ -150,11 +185,8 @@ export default function Scan4CallContact({
         setOtpError('');
         setOtp(['', '', '', '']);
         setResendTimer(30);
-        // Don't clear initCallData unless starting over (needed for verify)
-        // We rely on handleCall to update initCallData
     };
 
-    // --- MAIN OTP SUBMISSION LOGIC (CALL verifyPhoneNumberApi) ---
     const handleVerifyOtp = async () => {
         if (!otp.every(d => d.length === 1)) {
             setOtpError('Enter the 4-digit code sent to your number');
@@ -163,7 +195,6 @@ export default function Scan4CallContact({
         setOtpError('');
         setIsLoading(true);
 
-        // check if callerId available
         let finalCallerId = initCallData?.callerId;
         if (!finalCallerId) {
             setOtpError("Internal error: missing callerId for verification.");
@@ -174,15 +205,12 @@ export default function Scan4CallContact({
         const verifyPayload = {
             callerId: finalCallerId,
             qrCodeId: code,
-            phone: `${dialCountry.dialCode}${phoneNumber}`,
+            phone: `+${dialCountry.dialCode}${phoneNumber}`,
             otp: otp.join("")
         };
 
         try {
             const res = await verifyPhoneNumberApi(verifyPayload).unwrap();
-            console.log("responseData?.data?.token", res);
-
-            // RTK Query returns {data, error,...}
             const responseData = res;
             if (
                 responseData &&
@@ -202,45 +230,38 @@ export default function Scan4CallContact({
         }
     };
 
-    // OTP input change handler
+    // OTP input handlers
     const handleOtpChange = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
         const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 1);
         let newOtp = [...otp];
         newOtp[idx] = value;
         setOtp(newOtp);
-
         if (value && idx < 3) {
             otpRefs[idx + 1].current?.focus();
         }
     };
 
-    // OTP backspace handler
     const handleOtpKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
         if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
             otpRefs[idx - 1].current?.focus();
         }
     };
 
-    // --- PASTE HANDLER for OTP fields ---
     const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
         e.preventDefault();
         const pasted = e.clipboardData.getData("text").replace(/[^0-9]/g, '').slice(0, 4);
-
         if (!pasted) return;
-
         let newOtp = ['', '', '', ''];
         for (let i = 0; i < 4; i++) {
             if (pasted[i]) newOtp[i] = pasted[i];
         }
         setOtp(newOtp);
-        // Focus next unfilled input
         for (let i = 0; i < 4; i++) {
             if (newOtp[i] === '' && otpRefs[i]?.current) {
                 otpRefs[i].current?.focus();
                 return;
             }
         }
-        // If all filled, focus none.
     };
 
     // Reset everything (for changing phone or canceling)
@@ -253,7 +274,7 @@ export default function Scan4CallContact({
         setResendTimer(0);
         setPromptPhoneMsg('');
         setPermissionError('');
-        setPermissionStep('idle');
+        setPermissionStep('done');
         setInitCallData(null);
     };
 
@@ -275,7 +296,6 @@ export default function Scan4CallContact({
 
         // Call the reSentOTP API with callerId, phone, otp
         try {
-            // Must have callerId (from initialize call) and phone
             if (!initCallData?.callerId) {
                 setOtpError('Cannot resend OTP. Missing callerId.');
                 return;
@@ -283,21 +303,39 @@ export default function Scan4CallContact({
 
             const payload = {
                 callerId: initCallData.callerId,
-                phone: `${dialCountry.dialCode}${phoneNumber}`,
-
+                phone: `+${dialCountry.dialCode}${phoneNumber}`,
             };
 
-            let response = await reSentOTPApi(payload).unwrap();
-            console.log("response", response);
-
-            // Optionally, you could show a message: "OTP resent!"
+            await reSentOTPApi(payload).unwrap();
         } catch (e: any) {
             setOtpError("Failed to resend OTP. Please try again.");
         }
     };
 
+    const [fingerprint, setFingerprint] = useState<string>("");
+    const [geoLocation, setGeoLocation] = useState<any>(null);
+
+    useEffect(() => {
+        const fetchDeviceData = async () => {
+            try {
+                const fp = await getFingerprint();
+                setFingerprint(fp);
+                const location = await getUserLocation();
+
+                setGeoLocation(location);
+            } catch (error) {
+                console.error("Error getting device info:", error);
+            }
+        };
+        fetchDeviceData();
+    }, []);
+
     // --- MAIN: Handle "Call Vehicle Owner" ---
     const handleCall = async (params: string) => {
+        if (permissionStep !== 'done' || !microphoneGranted || !locationGranted) {
+            setPermissionError('Permissions are required to proceed. Please allow microphone and location access.');
+            return;
+        }
         dispatch(setCallType(params));
         if (!phoneNumber || phoneNumber.length < 10) {
             setPromptPhoneMsg('Kindly provide your 10-digit phone number to continue.');
@@ -312,49 +350,53 @@ export default function Scan4CallContact({
                 deviceId = uuidv4();
                 localStorage.setItem('deviceId', deviceId);
             }
-            // let fingerprint = getFingerprint();
-            // let getGeoLocation: any = getUserLocation();
+
             let payload = {
                 deviceId: deviceId,
                 qrCodeId: code,
                 networkId: "",
-                userAgent: "",
-                fingerprint: "",
-                phone: `${dialCountry.dialCode}${phoneNumber}`,
-                location: "",
+                userAgent: userAgent,
+                fingerprint: fingerprint,
+                phone: `+${dialCountry.dialCode}${phoneNumber}`,
+                location: `${geoLocation?.latitude ?? ""} ${geoLocation?.longitude ?? ""}`,
             }
 
             let result = await initializeCallApi(payload).unwrap()
+
             if (
                 result &&
                 result.status === 'sucesss' &&
                 result.data &&
                 typeof result.data.callerId !== "undefined"
             ) {
-                // Store callerId/token for use in verify step
                 setInitCallData(result.data as InitCallData);
-                // Go to permissions/OTP entry, supplying the callerId
                 askPermissionsAndSendOtp('owner', result.data.callerId, result?.data?.isNewNumber);
             } else {
                 setPromptPhoneMsg("Failed to initiate call. Please try again.");
             }
         } catch (err) {
+            console.log(err);
             setPromptPhoneMsg("Failed to initiate call. Please try again.");
         } finally {
             setIsLoading(false);
         }
     }
 
-    // Emergency button handler (for 'emergency', not calling initCallApi but can be extended)
+    // Emergency button handler
     const handleEmergency = async () => {
-        // In this logic, we do *not* call initializeCallApi, so no callerId.
-        // Real implementation would replicate the above, adjust as needed.
+        // Permissions required!
+        if (permissionStep !== 'done' || !microphoneGranted || !locationGranted) {
+            setPermissionError('Permissions are required to proceed. Please allow microphone and location access.');
+            return;
+        }
         setContactType('emergency');
         setOtpSent(true);
         setOtpError('');
         setOtp(['', '', '', '']);
         setResendTimer(30);
     };
+
+    // UI
 
     return (
         <div
@@ -377,6 +419,30 @@ export default function Scan4CallContact({
                 />
             </div>
 
+            {/* Permission Step UI */}
+            {(permissionStep !== 'done') && (
+                <div className="w-full max-w-md bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex flex-col items-center mb-5">
+                    <span className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                        Permissions Required
+                    </span>
+                    <span className="text-sm text-gray-700 mb-2 text-center" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                        To continue, allow <b>Microphone</b> and <b>Location</b> permissions.
+                    </span>
+                    {permissionStep === 'requesting' && (
+                        <span className="text-xs text-gray-500 animate-pulse">Requesting permissions...</span>
+                    )}
+                    {permissionError && (
+                        <span className="text-xs text-red-500">{permissionError}</span>
+                    )}
+                    {/* Optional: how-to instructions if error */}
+                    {permissionStep === 'error' && (
+                        <span className="text-xs text-gray-500 mt-2 text-center">
+                            Please enable permissions in your browser/app settings and reload this page.
+                        </span>
+                    )}
+                </div>
+            )}
+
             {/* Heading */}
             <h1
                 className="text-lg mb-2 font-semibold text-gray-700 text-center"
@@ -391,7 +457,7 @@ export default function Scan4CallContact({
             </p>
 
             {/* Phone Number Section and OTP Logic */}
-            {!otpSent && (
+            {(permissionStep === 'done') && !otpSent && (
                 <>
                     <div className="w-full mb-8">
                         <label
@@ -445,7 +511,7 @@ export default function Scan4CallContact({
                     {/* Call Button */}
                     <button
                         onClick={() => handleCall("GENERAL")}
-                        disabled={isLoading || permissionStep === 'requesting'}
+                        disabled={isLoading}
                         style={{
                             background: VIBRANT_GREEN,
                             fontFamily: 'var(--font-montserrat)',
@@ -478,7 +544,7 @@ export default function Scan4CallContact({
                     {/* Emergency Button */}
                     <button
                         onClick={() => handleCall("EMERGENCY")}
-                        disabled={isLoading || permissionStep === 'requesting'}
+                        disabled={isLoading}
                         style={{
                             fontFamily: 'var(--font-montserrat)'
                         }}
@@ -494,7 +560,7 @@ export default function Scan4CallContact({
             )}
 
             {/* OTP Workflow (COMMON for both contact types) */}
-            {otpSent && !otpVerified && (
+            {(permissionStep === 'done') && otpSent && !otpVerified && (
                 <div className="mb-3 mt-2 bg-gradient-to-r from-[#FFFDE0] to-[#FFF3F0] px-5 py-5 rounded-lg flex flex-col items-center gap-2 w-full max-w-md"
                     style={{ fontFamily: 'var(--font-montserrat)' }}>
                     <div className={`w-full text-center mb-1 font-semibold ${contactType === "owner" ? "text-[#1a365d]" : "text-[#c95e26]"}`}
@@ -562,7 +628,7 @@ export default function Scan4CallContact({
                 </div>
             )}
 
-            {otpVerified && contactType === "owner" && (
+            {(permissionStep === 'done') && otpVerified && contactType === "owner" && (
                 <div className="mb-3 mt-2 bg-gradient-to-r from-[#D4FFEC] to-[#BDF4D7] px-5 py-4 rounded-lg flex flex-col items-center gap-2 w-full max-w-md"
                     style={{ fontFamily: 'var(--font-montserrat)' }}>
                     <div className="w-full text-center text-green-700 font-semibold" style={{ fontFamily: 'var(--font-montserrat)' }}>
@@ -571,7 +637,7 @@ export default function Scan4CallContact({
                 </div>
             )}
 
-            {otpVerified && contactType === "emergency" && (
+            {(permissionStep === 'done') && otpVerified && contactType === "emergency" && (
                 <div className="mb-3 mt-2 bg-gradient-to-r from-[#FFDFDF] to-[#FFF8F0] px-5 py-4 rounded-lg flex flex-col items-center gap-2 w-full max-w-md"
                     style={{ fontFamily: 'var(--font-montserrat)' }}>
                     <div className="w-full text-center text-[#e32d2d] font-semibold" style={{ fontFamily: 'var(--font-montserrat)' }}>
