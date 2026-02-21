@@ -4,7 +4,7 @@ const myTwilioNumber = '+16268871097';
 
 export async function POST(req) {
     const response = new TwilioTwiml.VoiceResponse();
-    
+
     // Try to get 'dialTo' from URL params first, then from the body
     const url = new URL(req.url);
     let targetNumber = url.searchParams.get('dialTo');
@@ -19,7 +19,7 @@ export async function POST(req) {
     }
 
     const dial = response.dial({ callerId: myTwilioNumber });
-    
+
     // Crucial: Use .number() to apply the statusCallback
     dial.number({
         statusCallback: 'https://scan4call-calling.vercel.app',
