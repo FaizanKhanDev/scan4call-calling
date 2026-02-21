@@ -20,6 +20,7 @@ export default function Calling() {
     const [callActive, setCallActive] = useState(false);
     const [ringing, setRinging] = useState(true);
     const { qrCodeData } = useSelector((state: any) => state.qrCode)
+    const { callType } = useSelector((state: any) => state.publicCaller)
     const findBloodGroup = BLOOD_GROUPS.find((item) => item.key == qrCodeData?.user?.bloodGroup);
 
 
@@ -108,10 +109,11 @@ export default function Calling() {
             </div>
 
             <div className="text-2xl text-white font-bold text-center mb-2" style={{ fontFamily: 'var(--font-poppins)' }}>
-                John Doe
+
+                {callType == "GENERAL" ? qrCodeData?.user?.name : qrCodeData?.user?.emergencyRelation}
             </div>
             <div className="text-[#D3EEE7] text-sm mb-1 text-center" style={{ letterSpacing: 0.15 }}>
-                Mobile
+                {callType == "GENERAL" ? 'Scan4Call' : qrCodeData?.user?.emergencyFullName}
             </div>
 
 
@@ -159,25 +161,30 @@ export default function Calling() {
 
 
             {/* Emergency Notes and Blood Group */}
-            <div className="flex flex-col items-center mb-2 w-full px-4 max-w-md">
-                <div className="flex flex-row items-center gap-4 justify-center w-full">
-                    <div className="flex flex-row items-center bg-[#1b5247] rounded px-2.5 py-1 gap-1.5 mb-0.5 border border-[#2fd898]">
-                        <span className="text-xs text-[#c2ffe6] font-semibold" style={{ fontFamily: 'var(--font-montserrat)', letterSpacing: 0.1 }}>
-                            Blood Group:
-                        </span>
-                        <span className="ml-1 text-sm font-bold text-[#2fd898]" style={{ fontFamily: 'var(--font-montserrat)' }}>
-                            {findBloodGroup?.label}
-                        </span>
+            {
+                callType != "GENERAL" && (
+                    <div className="flex flex-col items-center mb-2 w-full px-4 max-w-md">
+                        <div className="flex flex-row items-center gap-4 justify-center w-full">
+                            <div className="flex flex-row items-center bg-[#1b5247] rounded px-2.5 py-1 gap-1.5 mb-0.5 border border-[#2fd898]">
+                                <span className="text-xs text-[#c2ffe6] font-semibold" style={{ fontFamily: 'var(--font-montserrat)', letterSpacing: 0.1 }}>
+                                    Blood Group:
+                                </span>
+                                <span className="ml-1 text-sm font-bold text-[#2fd898]" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                                    {findBloodGroup?.label}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="mt-1 w-full flex justify-center">
+                            {/* Added flex, justify-center, and text-center to center content */}
+                            <span className="text-xs text-[#FFD5B7] font-medium block break-words text-center" style={{ fontFamily: 'var(--font-montserrat)', letterSpacing: 0 }}>
+                                <span className="font-bold text-[#ff9724]">Emergency Notes:</span>{" "}
+                                <span>{qrCodeData?.user?.emergencyNotes}</span>
+                            </span>
+                        </div>
                     </div>
-                </div>
-                <div className="mt-1 w-full flex justify-center">
-                    {/* Added flex, justify-center, and text-center to center content */}
-                    <span className="text-xs text-[#FFD5B7] font-medium block break-words text-center" style={{ fontFamily: 'var(--font-montserrat)', letterSpacing: 0 }}>
-                        <span className="font-bold text-[#ff9724]">Emergency Notes:</span>{" "}
-                        <span>{qrCodeData?.user?.emergencyNotes}</span>
-                    </span>
-                </div>
-            </div>
+                )
+            }
+
 
 
             {/* End Call Button */}
