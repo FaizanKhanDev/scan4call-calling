@@ -4,6 +4,8 @@ import { VIBRANT_GREEN } from '@/constant/color';
 import { Phone } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import BLOOD_GROUPS from '@/constant/bloodGroups';
+import { Device } from '@twilio/voice-sdk';
+
 
 const CALLER_IMAGE = 'https://cdn-icons-png.flaticon.com/512/1946/1946429.png';
 
@@ -22,7 +24,10 @@ export default function Calling() {
     const { qrCodeData } = useSelector((state: any) => state.qrCode)
     const { callType } = useSelector((state: any) => state.publicCaller)
     const findBloodGroup = BLOOD_GROUPS.find((item) => item.key == qrCodeData?.user?.bloodGroup);
-
+    const { token } = useSelector((state: any) => state.publicCaller)
+    const [device, setDevice] = useState<Device | null>(null);
+    const [isCalling, setIsCalling] = useState(false);
+    const [toNumber, setToNumber] = useState('');
 
     // For simple pulse animation using CSS classes 
     const [pulsing, setPulsing] = useState(true);
@@ -58,11 +63,69 @@ export default function Calling() {
 
     const handleEndCall = () => {
         setCallActive(false);
+        device?.disconnectAll();
+        setIsCalling(false);
     };
 
     let statusBarColor = ringing ? '#FE9600' : callActive ? '#1AC65D' : '#F33';
     let statusBarText = ringing ? 'Ringing...' : callActive ? 'In Call' : 'Call Ended';
     let statusBarTextColor = '#fff';
+
+
+
+    // 2. Initialize Twilio Device
+    const initDevice = async () => {
+
+        if (!token) return;
+
+        const device = new Device(token);
+        console.log("device", device, "token", token);
+
+
+        device.on('ready', () => {
+            console.log('Device is ready');
+        });
+
+        device.on('error', (err) => {
+            console.error('Device error:', err);
+        });
+
+        device.on('disconnect', () => {
+            console.log('Call disconnected');
+            setIsCalling(false);
+        });
+
+        setDevice(device);
+    };
+
+    useEffect(() => {
+        initDevice();
+    }, []);
+
+
+    // 3. Make the call
+    const makeCall = async () => {
+        if (!device) return;
+
+        const params = {
+            To: "+923162177746",
+            // To: callType == "GENERAL" ? qrCodeData?.user?.phone : qrCodeData?.user?.emergencyPhone,
+        };
+
+        const connection = await device.connect(params as any);
+
+        setIsCalling(true);
+        console.log("connection", connection);
+        connection.on('error', (err) => console.error('Connection error:', err));
+
+        connection.on('accept', () => console.log('Call accepted'));
+        connection.on('disconnect', () => {
+            setIsCalling(false);
+            console.log('Call ended');
+        });
+    };
+
+
 
     return (
         <div className="relative min-h-[480px] flex flex-col items-center justify-center bg-[#07132C] py-2 pb-10 w-full"
@@ -202,6 +265,18 @@ export default function Calling() {
                     <Phone size={36} color="white" style={{ transform: "rotate(135deg)" }} />
                 </button>
             )}
+            <button
+                aria-label="End Call"
+                className="mt-10 flex items-center justify-center bg-[#F33] w-16 h-16 rounded-full shadow-lg hover:bg-[#c81d1d] transition"
+                style={{
+                    boxShadow: '0 5px 18px #F337',
+                    border: 'none',
+                    outline: 'none',
+                }}
+                onClick={makeCall}
+            >
+                <Phone size={36} color="white" style={{ transform: "rotate(135deg)" }} />
+            </button>
 
 
 

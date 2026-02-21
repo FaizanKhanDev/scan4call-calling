@@ -369,6 +369,9 @@ export default function Scan4CallContact({
                 result.data &&
                 typeof result.data.callerId !== "undefined"
             ) {
+                if (!result?.data?.isNewNumber) {
+                    dispatch(setToken(result?.data?.token))
+                }
                 setInitCallData(result.data as InitCallData);
                 askPermissionsAndSendOtp('owner', result.data.callerId, result?.data?.isNewNumber);
             } else {

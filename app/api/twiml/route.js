@@ -16,7 +16,8 @@ export async function POST(req) {
     }
 
     // Add the callerId here inside an object
-    response.dial({ callerId: myTwilioNumber }, targetNumber);
+    let number = `+${targetNumber}`
+    response.dial({ callerId: number }, targetNumber);
 
     return new Response(response.toString(), {
         headers: { 'Content-Type': 'text/xml' },
