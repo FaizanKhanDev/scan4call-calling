@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Scan4CallContact from "./component/AskingNumber";
 import Calling from "./component/Calling";
+import { Suspense } from "react";
 
 export default function Page() {
   const [startCalling, setStartCalling] = useState(false)
@@ -63,14 +64,16 @@ export default function Page() {
   // }, []);
 
   return (
-    <div className="min-h-screen bg-[#07132C] overflow-hidden p-0 m-0">
-      {
-        startCalling ? (
-          <Calling />
-        ) : (
-          <Scan4CallContact setStartCalling={setStartCalling} />
-        )
-      }
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <div className="min-h-screen bg-[#07132C] overflow-hidden p-0 m-0">
+        {
+          startCalling ? (
+            <Calling />
+          ) : (
+            <Scan4CallContact setStartCalling={setStartCalling} />
+          )
+        }
+      </div>
+    </Suspense>
   );
 }
