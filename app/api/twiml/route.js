@@ -10,13 +10,11 @@ export async function POST(req) {
     const params = new URLSearchParams(bodyText);
     const targetNumber = params.get("To") || params.get("dialTo");
 
-    if (!targetNumber) {
-        return new Response("Missing 'dialTo' number", { status: 400 });
-    }
+    let dialTo = targetNumber.replace(/^client:/, "");
 
     // Validate E.164 number
-   
-    response.dial({ callerId: myTwilioNumber }).number(targetNumber);
+
+    response.dial({ callerId: myTwilioNumber }).number(dialTo);
 
     return new Response(response.toString(), {
         headers: { "Content-Type": "text/xml" },
