@@ -429,7 +429,7 @@ export default function Scan4CallContact({
                     {/* Permission Step UI */}
                     {(permissionStep !== 'done') && (
                         <div className="w-full max-w-md bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex flex-col items-center mb-5">
-                            <span className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                            <span className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--font-montserrat)', color: "#000" }}>
                                 Permissions Required
                             </span>
                             <span className="text-sm text-gray-700 mb-2 text-center" style={{ fontFamily: 'var(--font-montserrat)' }}>
