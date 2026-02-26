@@ -23,7 +23,7 @@ type InitCallData = {
 export default function Scan4CallContact({
     setStartCalling
 }: {
-    setStartCalling: (params: boolean) => void
+    setStartCalling: (params: any) => void
 }) {
 
     const searchParams = useSearchParams();
@@ -167,7 +167,10 @@ export default function Scan4CallContact({
         }
         // CALL handleSendOtp with optional callerId to wire flow
         if (!isNewNumber) {
-            setStartCalling(true)
+            setStartCalling({
+                start: true,
+                callerId: initCallData?.callerId as number
+            })
             return
         }
         handleSendOtp(type, callerIdFromCallApi);
@@ -218,7 +221,10 @@ export default function Scan4CallContact({
             ) {
                 setOtpVerified(true);
                 setOtpError('');
-                setStartCalling(true)
+                setStartCalling({
+                    start: true,
+                    callerId: initCallData?.callerId as number
+                })
                 dispatch(setToken(responseData?.data?.token))
             } else {
                 setOtpError(responseData?.message || "OTP verification failed. Please try again.");

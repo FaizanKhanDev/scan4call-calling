@@ -6,7 +6,10 @@ import Calling from "./component/Calling";
 import { Suspense } from "react";
 
 export default function Page() {
-  const [startCalling, setStartCalling] = useState(false)
+  const [startCalling, setStartCalling] = useState({
+    start: false,
+    callerId: 0,
+  })
   // useEffect(() => {
   //   // Function to detect desktop / large screen
   //   const checkDesktop = () => {
@@ -67,8 +70,8 @@ export default function Page() {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="min-h-screen bg-[#07132C] overflow-hidden p-0 m-0">
         {
-          startCalling ? (
-            <Calling />
+          startCalling.start ? (
+            <Calling callerId={startCalling.callerId} />
           ) : (
             <Scan4CallContact setStartCalling={setStartCalling} />
           )

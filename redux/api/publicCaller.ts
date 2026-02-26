@@ -39,6 +39,14 @@ export const publicCallerApi = createApi({
             }),
         }),
 
+        endPublicCallerCall: builder.mutation({
+            query: (credentials) => ({
+                url: `/end-call`,
+                method: 'POST',
+                body: credentials
+            }),
+        }),
+
     }),
 });
 
@@ -46,4 +54,5 @@ export const {
     useInitializeCallMutation, /* ----- function: initializeCall (endPoint:/initialize-call-access) ----- */
     useVerifyPhoneNumberMutation, /* ----- function: verifyPhoneNumber (endPoint:/verify-phone) ----- */
     useReSentOTPMutation, /* ----- function: reSentOTP (endPoint:/resent-otp) ----- */
+    useEndPublicCallerCallMutation, /* ----- function: endPublicCallerCall (endPoint:/end-call) ----- */
 } = publicCallerApi;

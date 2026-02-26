@@ -17,7 +17,11 @@ function formatDuration(sec: number) {
     return `${minutes}:${seconds}`;
 }
 
-export default function Calling() {
+export default function Calling({
+    callerId
+}: {
+    callerId: number
+}) {
     const [callDuration, setCallDuration] = useState(0); // In seconds
     const [callActive, setCallActive] = useState(false);
     const [ringing, setRinging] = useState(true);
@@ -28,21 +32,32 @@ export default function Calling() {
     const [device, setDevice] = useState<Device | null>(null);
     const [isCalling, setIsCalling] = useState(false);
     const [toNumber, setToNumber] = useState('');
+    const audioRef = React.useRef<HTMLAudioElement | null>(null);
+    const ringingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+
+    useEffect(() => {
+        // const audio = new Audio('/Ringing.mp3');
+        // audio.volume = 0.3; // 🔉 0.0 to 1.0 (30% volume)
+        // audioRef.current = audio;
+    }, []);
 
     // For simple pulse animation using CSS classes 
     const [pulsing, setPulsing] = useState(true);
 
     useEffect(() => {
-        // Show ringing for 2.5 seconds, then connect
-        let ringingTimeout: NodeJS.Timeout;
-        if (ringing) {
-            ringingTimeout = setTimeout(() => {
-                setRinging(false);
-                setCallActive(true);
-            }, 2500);
+        let interval: NodeJS.Timeout;
+
+        if (callActive) {
+            interval = setInterval(() => {
+                setCallDuration((prev) => prev + 1);
+            }, 1000);
         }
-        return () => ringingTimeout && clearTimeout(ringingTimeout);
-    }, [ringing]);
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [callActive]);
 
     // Start call timer only when call is active
     useEffect(() => {
@@ -64,6 +79,11 @@ export default function Calling() {
     const handleEndCall = () => {
         setCallActive(false);
         device?.disconnectAll();
+        stopRingtone()
+        setIsCalling(false);
+        setCallActive(false);  // ✅ stops timer
+        setRinging(false);
+        setCallDuration(0);    // ✅ reset counter
         setIsCalling(false);
     };
 
@@ -72,56 +92,131 @@ export default function Calling() {
     let statusBarTextColor = '#fff';
 
 
+    const deviceRef = React.useRef<Device | null>(null);
+    const hasInitialized = React.useRef(false);
+
 
     // 2. Initialize Twilio Device
     const initDevice = async () => {
-
         if (!token) return;
+        if (hasInitialized.current) return; // ✅ prevent duplicate
 
-        const device = new Device(token);
-        console.log("device", device, "token", token);
+        hasInitialized.current = true;
 
-
-        device.on('ready', () => {
-            console.log('Device is ready');
+        const newDevice = new Device(token, {
+            // logLevel: 1,
         });
 
-        device.on('error', (err) => {
+        newDevice.on('error', (err) => {
             console.error('Device error:', err);
         });
 
-        device.on('disconnect', () => {
+        newDevice.on('disconnect', () => {
             console.log('Call disconnected');
             setIsCalling(false);
         });
 
-        setDevice(device);
+        await newDevice.register();
+
+        // console.log("Device registered");
+
+        deviceRef.current = newDevice;
+        setDevice(newDevice);
+
+        await makeCall(newDevice);
     };
 
-    useEffect(() => {
-        initDevice();
-    }, []);
 
+    useEffect(() => {
+        if (!token) return;
+
+        initDevice();
+
+        return () => {
+            device?.destroy();
+        };
+    }, [token]);
 
     // 3. Make the call
-    const makeCall = async () => {
-        if (!device) return;
+    const makeCall = async (activeDevice: any) => {
+        const dev = activeDevice || device;
+        if (!dev) return;
 
         const params = {
             "To": "+923162177746",
         };
 
-        const connection = await device.connect(params as any);
+        const connection = await dev.connect(params as any);
+
+
 
         setIsCalling(true);
-        console.log("connection", connection);
-        connection.on('error', (err) => console.error('Connection error:', err));
+        connection.on('ringing', () => {
+            console.log('Remote phone is ringing');
+            setRinging(true);
 
-        connection.on('accept', () => console.log('Call accepted'));
+
+            const playWithDelay = () => {
+                if (!audioRef.current) return;
+
+                audioRef.current.currentTime = 0;
+                audioRef.current.play().catch(err =>
+                    console.log("Autoplay blocked:", err)
+                );
+
+                // After audio ends, wait 2s then replay
+                audioRef.current.onended = () => {
+                    ringingTimeoutRef.current = setTimeout(() => {
+                        playWithDelay();
+                    }, 2000); // ⏳ 2 second delay
+                };
+            };
+
+            playWithDelay();
+        });
+
+        // console.log("connection", connection);
+        connection.on('error', (err: any) => console.error('Connection error:', err));
+
+        connection.on('accept', () => {
+            console.log('Call accepted (Media connection established)');
+            setRinging(false)
+            setCallActive(true);
+            stopRingtone();
+        }
+        );
+
+        connection.on('stateChanged', (state: any) => {
+            console.log('Connection state:', state);
+            if (state === 'open' && !callActive) {
+                setCallActive(true);
+                stopRingtone();
+            }
+            if (state === 'closed') {
+                setCallActive(false);
+                setCallDuration(0); // reset timer
+                stopRingtone();
+            }
+        });
+
         connection.on('disconnect', () => {
             setIsCalling(false);
             console.log('Call ended');
+            handleEndCall();
         });
+    };
+
+    const stopRingtone = () => {
+        if (ringingTimeoutRef.current) {
+            clearTimeout(ringingTimeoutRef.current);
+            ringingTimeoutRef.current = null;
+        }
+
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+            audioRef.current.onended = null; // 🔥 very important
+        }
     };
 
 
@@ -250,20 +345,7 @@ export default function Calling() {
 
 
             {/* End Call Button */}
-            {(callActive && !ringing) && (
-                <button
-                    aria-label="End Call"
-                    className="mt-10 flex items-center justify-center bg-[#F33] w-16 h-16 rounded-full shadow-lg hover:bg-[#c81d1d] transition"
-                    style={{
-                        boxShadow: '0 5px 18px #F337',
-                        border: 'none',
-                        outline: 'none',
-                    }}
-                    onClick={handleEndCall}
-                >
-                    <Phone size={36} color="white" style={{ transform: "rotate(135deg)" }} />
-                </button>
-            )}
+            {/* {(!ringing) && ( */}
             <button
                 aria-label="End Call"
                 className="mt-10 flex items-center justify-center bg-[#F33] w-16 h-16 rounded-full shadow-lg hover:bg-[#c81d1d] transition"
@@ -272,11 +354,11 @@ export default function Calling() {
                     border: 'none',
                     outline: 'none',
                 }}
-                onClick={makeCall}
+                onClick={handleEndCall}
             >
                 <Phone size={36} color="white" style={{ transform: "rotate(135deg)" }} />
             </button>
-
+            {/* )} */}
 
 
             {(!callActive && !ringing) && (
