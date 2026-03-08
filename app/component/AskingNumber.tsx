@@ -219,10 +219,6 @@ export default function Scan4CallContact({
             setIsLoading(false);
             return;
         }
-
-        console.log("dialCountry", dialCountry);
-
-
         // Use wordCode as 'otp' for API payload for backward compatibility
         const verifyPayload = {
             callerId: finalCallerId,
