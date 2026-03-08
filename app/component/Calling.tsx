@@ -149,9 +149,7 @@ export default function Calling({
                     : `${qrCodeData?.user?.emergencyCountryCode}${qrCodeData?.user?.emergencyPhone}`
         };
 
-        const connection: any = {};
-        // const connection: any = await dev.connect(params as any);
-
+        const connection: any = await dev.connect(params as any);
 
 
         setIsCalling(true);

@@ -223,7 +223,7 @@ export default function Scan4CallContact({
         const verifyPayload = {
             callerId: finalCallerId,
             qrCodeId: code,
-            phone: `${dialCountry.dialCode}${phoneNumber}`,
+            phone: `+${dialCountry.dialCode}${phoneNumber}`,
             otp: wordCode.trim()
         };
 
