@@ -37,8 +37,19 @@ const getUserLocation = () => {
     });
 }
 
-export {
+const removeLeadingZero = (num: string | number): string => {
+    const value = String(num);
 
+    if (value.startsWith("0")) {
+        return value.substring(1);
+    }
+
+    return value;
+};
+
+
+export {
+    removeLeadingZero,
     getFingerprint,
     getUserLocation
 }

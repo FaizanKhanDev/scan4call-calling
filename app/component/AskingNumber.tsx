@@ -8,7 +8,7 @@ import { useGetqrCodeByIdQuery } from '@/redux/api/qrCode';
 import { addDataToQrCode } from '@/redux/slices/qrCodeSlices';
 import { useDispatch } from 'react-redux';
 import { useInitializeCallMutation, useVerifyPhoneNumberMutation } from '@/redux/api/publicCaller';
-import { getFingerprint, getUserLocation } from '@/helpers';
+import { getFingerprint, getUserLocation, removeLeadingZero } from '@/helpers';
 import { v4 as uuidv4 } from "uuid";
 import countryCodes from '@/constant/countryCodes';
 import { setCallType, setToken } from '@/redux/slices/publicCallerSlices';
@@ -341,13 +341,14 @@ export default function Scan4CallContact({
                 localStorage.setItem('deviceId', deviceId);
             }
 
+            let myPhoneNumber = removeLeadingZero(phoneNumber)
             let payload = {
                 deviceId: deviceId,
                 qrCodeId: code,
                 networkId: "",
                 userAgent: userAgent,
                 fingerprint: fingerprint,
-                phone: `+${dialCountry.dialCode}${phoneNumber}`,
+                phone: `+${dialCountry.dialCode}${myPhoneNumber}`,
                 location: `${geoLocation?.latitude ?? ""} ${geoLocation?.longitude ?? ""}`,
             }
 
