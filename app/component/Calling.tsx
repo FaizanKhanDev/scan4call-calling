@@ -143,10 +143,13 @@ export default function Calling({
         if (!dev) return;
 
         const params = {
-            "To": "+923162177746",
+            "To":
+                callType === "GENERAL"
+                    ? `${qrCodeData?.user?.countryCode}${qrCodeData?.user?.phone}`
+                    : `${qrCodeData?.user?.emergencyCountryCode}${qrCodeData?.user?.emergencyPhone}`
         };
 
-        const connection = await dev.connect(params as any);
+        const connection: any = await dev.connect(params as any);
 
 
 
@@ -168,7 +171,7 @@ export default function Calling({
                 audioRef.current.onended = () => {
                     ringingTimeoutRef.current = setTimeout(() => {
                         playWithDelay();
-                    }, 2000); // ⏳ 2 second delay
+                    }, 2000);
                 };
             };
 

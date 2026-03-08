@@ -9,6 +9,8 @@ const qrCodeSlices = createSlice({
     initialState,
     reducers: {
         addDataToQrCode: (state, action) => {
+            console.log("action.payload;", JSON.stringify(action.payload));
+
             state.qrCodeData = action.payload;
         },
     },
