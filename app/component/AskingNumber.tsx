@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import countryCodes from '@/constant/countryCodes';
 import { setCallType, setToken } from '@/redux/slices/publicCallerSlices';
 import { useReSentOTPMutation } from '@/redux/api/publicCaller';
+import { log } from 'console';
 
 type InitCallData = {
     callerId?: number,
@@ -219,6 +220,9 @@ export default function Scan4CallContact({
             return;
         }
 
+        console.log("dialCountry", dialCountry);
+
+
         // Use wordCode as 'otp' for API payload for backward compatibility
         const verifyPayload = {
             callerId: finalCallerId,
@@ -343,9 +347,11 @@ export default function Scan4CallContact({
                 networkId: "",
                 userAgent: userAgent,
                 fingerprint: fingerprint,
-                phone: `${dialCountry.dialCode}${phoneNumber}`,
+                phone: `+${dialCountry.dialCode}${phoneNumber}`,
                 location: `${geoLocation?.latitude ?? ""} ${geoLocation?.longitude ?? ""}`,
             }
+
+
 
             let result = await initializeCallApi(payload).unwrap()
 
