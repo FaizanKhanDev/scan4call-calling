@@ -331,6 +331,8 @@ export default function Scan4CallContact({
             return;
         }
         setIsLoading(true);
+        console.log("params", params);
+
 
         try {
             let deviceId = localStorage.getItem('deviceId');
