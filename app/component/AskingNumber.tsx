@@ -6,7 +6,7 @@ import { ROYAL_BLUE, TEAL_CYAN, VIBRANT_GREEN } from '@/constant/color';
 import { useSearchParams } from 'next/navigation'
 import { useGetqrCodeByIdQuery } from '@/redux/api/qrCode';
 import { addDataToQrCode } from '@/redux/slices/qrCodeSlices';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useInitializeCallMutation, useVerifyPhoneNumberMutation } from '@/redux/api/publicCaller';
 import { getFingerprint, getUserLocation, removeLeadingZero } from '@/helpers';
 import { v4 as uuidv4 } from "uuid";
@@ -47,6 +47,7 @@ export default function Scan4CallContact({
     const code = searchParams.get('code');
     const sno = searchParams.get('sno');
     const dispatch = useDispatch();
+    const { callType } = useSelector((state: any) => state.publicCaller)
 
     const [initializeCallApi] = useInitializeCallMutation();
     const [verifyPhoneNumberApi] = useVerifyPhoneNumberMutation();
@@ -224,7 +225,8 @@ export default function Scan4CallContact({
             callerId: finalCallerId,
             qrCodeId: code,
             phone: `+${dialCountry.dialCode}${phoneNumber}`,
-            otp: wordCode.trim()
+            otp: wordCode.trim(),
+            callType: callType,
         };
 
         try {
@@ -346,6 +348,8 @@ export default function Scan4CallContact({
                 fingerprint: fingerprint,
                 phone: `+${dialCountry.dialCode}${myPhoneNumber}`,
                 location: `${geoLocation?.latitude ?? ""} ${geoLocation?.longitude ?? ""}`,
+                callType: params,
+
             }
 
 

@@ -14,79 +14,79 @@ export default function Page() {
   const [terminalOpen, setTerminalOpen] = useState(false); // will become true if devtools/terminal detected
   const [desktopMode, setDesktopMode] = useState(false); // true if opened on desktop
 
-  useEffect(() => {
-    // Function to detect desktop / large screen
-    const checkDesktop = () => {
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const smallScreen = window.innerWidth <= 768;
+  // useEffect(() => {
+  //   // Function to detect desktop / large screen
+  //   const checkDesktop = () => {
+  //     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  //     const smallScreen = window.innerWidth <= 768;
 
-      // If not mobile or screen is large, consider desktop mode
-      const isDesktop = !isMobile || !smallScreen;
-      setDesktopMode(isDesktop);
-      return isDesktop;
-    };
+  //     // If not mobile or screen is large, consider desktop mode
+  //     const isDesktop = !isMobile || !smallScreen;
+  //     setDesktopMode(isDesktop);
+  //     return isDesktop;
+  //   };
 
-    // Initial check
-    checkDesktop();
+  //   // Initial check
+  //   checkDesktop();
 
-    // Run check on resize
-    window.addEventListener("resize", checkDesktop);
+  //   // Run check on resize
+  //   window.addEventListener("resize", checkDesktop);
 
-    // Devtools/terminal detection
-    // Also detect by keyboard events (F12 / Ctrl+Shift+I/C/J)
-    const blockKeys = (e: KeyboardEvent) => {
-      if (
-        e.key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "C", "J"].includes(e.key))
-      ) {
-        // Detected developer tools shortcut
-        setTerminalOpen(true);
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    window.addEventListener("keydown", blockKeys);
+  //   // Devtools/terminal detection
+  //   // Also detect by keyboard events (F12 / Ctrl+Shift+I/C/J)
+  //   const blockKeys = (e: KeyboardEvent) => {
+  //     if (
+  //       e.key === "F12" ||
+  //       (e.ctrlKey && e.shiftKey && ["I", "C", "J"].includes(e.key))
+  //     ) {
+  //       // Detected developer tools shortcut
+  //       setTerminalOpen(true);
+  //       e.preventDefault();
+  //       e.stopPropagation();
+  //     }
+  //   };
+  //   window.addEventListener("keydown", blockKeys);
 
-    // Block right click
-    const blockContext = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    };
-    window.addEventListener("contextmenu", blockContext);
+  //   // Block right click
+  //   const blockContext = (e: MouseEvent) => {
+  //     e.preventDefault();
+  //     e.stopPropagation();
+  //     return false;
+  //   };
+  //   window.addEventListener("contextmenu", blockContext);
 
-    // Additional devtools detection based on window size changes
-    const devtools = () => {
-      const widthThreshold = window.outerWidth - window.innerWidth > 160;
-      const heightThreshold = window.outerHeight - window.innerHeight > 160;
-      if (widthThreshold || heightThreshold) {
-        setTerminalOpen(true);
-      }
-    };
-    const devtoolsInterval = setInterval(devtools, 1000);
+  //   // Additional devtools detection based on window size changes
+  //   const devtools = () => {
+  //     const widthThreshold = window.outerWidth - window.innerWidth > 160;
+  //     const heightThreshold = window.outerHeight - window.innerHeight > 160;
+  //     if (widthThreshold || heightThreshold) {
+  //       setTerminalOpen(true);
+  //     }
+  //   };
+  //   const devtoolsInterval = setInterval(devtools, 1000);
 
-    return () => {
-      window.removeEventListener("resize", checkDesktop);
-      window.removeEventListener("keydown", blockKeys);
-      window.removeEventListener("contextmenu", blockContext);
-      clearInterval(devtoolsInterval);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("resize", checkDesktop);
+  //     window.removeEventListener("keydown", blockKeys);
+  //     window.removeEventListener("contextmenu", blockContext);
+  //     clearInterval(devtoolsInterval);
+  //   };
+  // }, []);
 
-  // If inspect/devtools enabled or desktop mode, refresh the page forcibly
-  useEffect(() => {
-    if (desktopMode || terminalOpen) {
-      // Use a slight timeout to avoid infinite refresh loop (in case re-render + state issues)
-      setTimeout(() => {
-        window.location.reload();
-      }, 200);
-    }
-  }, [desktopMode, terminalOpen]);
+  // // If inspect/devtools enabled or desktop mode, refresh the page forcibly
+  // useEffect(() => {
+  //   if (desktopMode || terminalOpen) {
+  //     // Use a slight timeout to avoid infinite refresh loop (in case re-render + state issues)
+  //     setTimeout(() => {
+  //       window.location.reload();
+  //     }, 200);
+  //   }
+  // }, [desktopMode, terminalOpen]);
 
-  // Do not render UI if refresh condition met
-  if (desktopMode || terminalOpen) {
-    return null;
-  }
+  // // Do not render UI if refresh condition met
+  // if (desktopMode || terminalOpen) {
+  //   return null;
+  // }
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
